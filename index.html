@@ -1,0 +1,161 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CreatorPilot AI</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b1020;color:#f4f6ff;font-family:Arial,sans-serif}
+header{padding:24px 18px;background:#121a30;border-bottom:1px solid #29334d}
+header h1{margin:0;color:#8ea5ff;font-size:25px}
+header p{color:#aab5ce;margin-bottom:0}
+main{max-width:950px;margin:auto;padding:20px}
+.panel{background:#151f36;border:1px solid #293754;border-radius:15px;padding:18px;margin-bottom:18px}
+h2{font-size:18px;margin-top:0}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.metric{background:#202d49;padding:17px;border-radius:12px}
+.metric small{color:#b4bfd7}
+.metric strong{display:block;font-size:27px;margin-top:8px}
+input,select,button{padding:12px;border-radius:9px;border:1px solid #465475;background:#101a2e;color:white;max-width:100%}
+button{background:#647ff0;border:0;font-weight:bold;cursor:pointer}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+.result{line-height:1.7;color:#dce4fa}
+footer{text-align:center;color:#8996b1;padding:25px;font-size:12px}
+@media(min-width:650px){.grid{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<header>
+<h1>✦ CreatorPilot AI</h1>
+<p>Comprends tes vidéos. Améliore tes performances. Développe ton audience.</p>
+</header>
+<main>
+<section class="panel">
+<h2>Ton espace créateur</h2>
+<p>Analyse tes statistiques TikTok et YouTube à partir d'un fichier CSV.</p>
+<div class="actions">
+<select id="platform">
+<option value="TikTok">TikTok</option>
+<option value="YouTube">YouTube</option>
+</select>
+<input type="file" id="csv" accept=".csv,text/csv">
+<button onclick="analyze()">Analyser mes vidéos</button>
+<button onclick="demo()">Voir la démonstration</button>
+</div>
+<p id="status" class="result">Importe un fichier CSV ou lance la démonstration.</p>
+</section>
+
+<section class="panel">
+<h2>Vue d'ensemble</h2>
+<div class="grid">
+<div class="metric"><small>Vues</small><strong id="views">0</strong></div>
+<div class="metric"><small>J'aime</small><strong id="likes">0</strong></div>
+<div class="metric"><small>Commentaires</small><strong id="comments">0</strong></div>
+<div class="metric"><small>Engagement</small><strong id="rate">0%</strong></div>
+</div>
+</section>
+
+<section class="panel">
+<h2>Diagnostic de tes vidéos</h2>
+<div id="diagnosis" class="result">Ton diagnostic apparaîtra ici après l'analyse.</div>
+</section>
+
+<section class="panel">
+<h2>Conseils pour progresser</h2>
+<div id="tips" class="result">Les conseils seront adaptés à tes statistiques.</div>
+</section>
+</main>
+<footer>CreatorPilot AI · Première version gratuite · Données traitées dans ton navigateur</footer>
+
+<script>
+let videos=[];
+
+function display(data){
+videos=data;
+const views=data.reduce((s,v)=>s+v.views,0);
+const likes=data.reduce((s,v)=>s+v.likes,0);
+const comments=data.reduce((s,v)=>s+v.comments,0);
+const rate=views?((likes+comments)/views*100):0;
+
+document.getElementById("views").textContent=views.toLocaleString("fr-FR");
+document.getElementById("likes").textContent=likes.toLocaleString("fr-FR");
+document.getElementById("comments").textContent=comments.toLocaleString("fr-FR");
+document.getElementById("rate").textContent=rate.toFixed(2)+"%";
+
+const avg=views/data.length;
+let diagnosis="";
+let tips=[];
+
+if(rate<3){
+diagnosis="Ton engagement est faible par rapport aux vues enregistrées.";
+tips.push("Teste une question simple à la fin de tes vidéos.");
+tips.push("Travaille les premières secondes pour retenir l'attention.");
+}else if(rate<7){
+diagnosis="Ton engagement est intermédiaire. Plusieurs améliorations sont possibles.";
+tips.push("Teste plusieurs accroches et compare les résultats.");
+tips.push("Invite les spectateurs à commenter ou partager.");
+}else{
+diagnosis="Ton engagement est encourageant. Identifie les sujets qui fonctionnent le mieux.";
+tips.push("Développe des vidéos complémentaires sur tes meilleurs sujets.");
+tips.push("Teste de nouvelles séries pour fidéliser ton audience.");
+}
+
+if(avg<1000){
+tips.push("Teste des sujets plus ciblés et des titres plus précis.");
+}else{
+tips.push("Compare les vidéos les plus vues avec celles qui génèrent le plus d'engagement.");
+}
+
+document.getElementById("diagnosis").textContent=
+diagnosis+" Nombre de vidéos analysées : "+data.length+".";
+document.getElementById("tips").innerHTML=tips.map(t=>"• "+t).join("<br>");
+document.getElementById("status").textContent=
+"Analyse terminée pour "+document.getElementById("platform").value+".";
+}
+
+function demo(){
+display([
+{views:12000,likes:850,comments:75},
+{views:8500,likes:420,comments:38},
+{views:22000,likes:1800,comments:160},
+{views:5100,likes:190,comments:20}
+]);
+}
+
+function analyze(){
+const file=document.getElementById("csv").files[0];
+if(!file){
+document.getElementById("status").textContent="Choisis d'abord un fichier CSV.";
+return;
+}
+const reader=new FileReader();
+reader.onload=function(e){
+try{
+const lines=e.target.result.trim().split(/\r?\n/);
+const headers=lines[0].split(",").map(x=>x.trim().toLowerCase());
+const find=(names)=>headers.findIndex(h=>names.includes(h));
+const vi=find(["views","vues"]);
+const li=find(["likes","j'aime","jaime"]);
+const ci=find(["comments","commentaires","commentaires"]);
+if(vi<0||li<0||ci<0)throw new Error("Colonnes requises : views, likes, comments.");
+const data=lines.slice(1).filter(Boolean).map(line=>{
+const cols=line.split(",");
+return {
+views:Number(cols[vi])||0,
+likes:Number(cols[li])||0,
+comments:Number(cols[ci])||0
+};
+});
+if(!data.length)throw new Error("Aucune vidéo trouvée dans le fichier.");
+display(data);
+}catch(err){
+document.getElementById("status").textContent="Erreur : "+err.message;
+}
+};
+reader.readAsText(file);
+}
+</script>
+</body>
+</html>
